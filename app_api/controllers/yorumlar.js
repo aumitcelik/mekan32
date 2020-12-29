@@ -75,51 +75,44 @@ var yorumOlustur = function (req, res, gelenMekan) {
               cevapOlustur(res, 404, {"mesaj": "Bulunamadı. mekanid gerekli"});
                     }
             };
-const yorumGetir = function (req, res) {
+const yorumGetir= function (req, res) {
     if (req.params && req.params.mekanid && req.params.yorumid) {
         Mekan.findById(req.params.mekanid)
-            .select('ad yorumlar')
+        .select('ad yorumlar')
             .exec(
-                function (hata, mekan) {
+                function(hata,mekan) {
                     var cevap, yorum;
                     if (!mekan) {
-                        cevapOlustur(res, 404, {
-                            "mesaj": "mekanid bulunamadı"
-                        });
+                        cevapOlustur (res,404, {"mesaj":"mekanid bulunamadı"});
                         return;
-                    } else if (hata) {
+                    }else if (hata) {
                         cevapOlustur(res, 400, hata);
                         return;
                     }
-                    if (mekan.yorumlar && mekan.yorumlar.lenght > 0) {
+                    if (mekan.yorumlar && mekan.yorumlar.length >0) {
                         yorum = mekan.yorumlar.id(req.params.yorumid);
                         if (!yorum) {
-                            cevapOlustur(res, 404, {
-                                "mesaj": "yorumid bulunamadı"
-                            });
-                        } else {
+                            cevapOlustur(res, 404, {"mesaj": "yorumid bulunamadı"});
+                        }
+                        else {
                             cevap = {
-                                mekan: {
-                                    ad: mekan.ad,
-                                    id: req.params.mekanid
+                                mekan : {
+                                    ad : mekan.ad,
+                                    id : req.params.mekanid
                                 },
-                                yorum: yorum
+                                yorum : yorum
                             };
                             cevapOlustur(res, 200, cevap);
                         }
-                    } else {
-                        cevapOlustur(res, 404, {
-                            "mesaj": "Hiç yorum yok"
-                        });
+                    }else {
+                        cevapOlustur(res, 404, {"mesaj" : "Hiç yorum yok"});
                     }
                 }
             );
-    } else {
-        cevapOlustur(res, 404, {
-            "mesaj": "Bulunamadı."
-        });
-    }
-};
+        }else {
+            cevapOlustur(res, 404, {"mesaj":"Bulunamadı."});
+        }
+    };
 const yorumGuncelle = function (req, res) {
     if (!req.params.mekanid || !req.params.yorumid) {
         cevapOlustur(res, 404, {"mesaj": "Bulunamadı. mekanid ve yorumid zorunlu"});
