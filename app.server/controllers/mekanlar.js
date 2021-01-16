@@ -1,104 +1,171 @@
 var express = require("express");
-var router = express.Router();
+var request = require("postman-request");
 
-const anaSayfa = function (req, res, next) {
+var apiSecenekleri = {
+  sunucu: "http://ahsenumitcelik1821012017.herokuapp.com",
+  apiYolu: "/api/mekanlar/",
+};
+
+var mesafeyiFormatla = function (mesafe) {
+  var yeniMesafe, birim;
+  if (mesafe > 1000) {
+    yeniMesafe = parseFloat(mesafe / 1000).toFixed(2);
+    birim = " km";
+  } else {
+    yeniMesafe = parseFloat(mesafe).toFixed(1);
+    birim = " m";
+  }
+  return yeniMesafe + birim;
+};
+
+var anasayfayiOlustur = function (req, res, cevap, mekanListesi) {
+  var mesaj;
+  if (!(mekanListesi instanceof Array)) {
+    mesaj = "API HATASI: Birşeyler Ters Gitti";
+    mekanListesi = [];
+  } else {
+    if (!mekanListesi.length) {
+      mesaj = "Civarda Herhangi Bir Mekan Bulunamadı!";
+    }
+  }
+
   res.render("mekanlar-liste", {
-    baslik: "Anasayfa",
+    baslik: "Mekan32",
     sayfaBaslik: {
       siteAd: "Mekan32",
       aciklama: "Isparta civarındaki mekanları keşfedin!",
     },
-    footer: " Ahsen Ümit Çelik",
-    mekanlar: [
-      {
-        ad: "Starbucks",
-        adres: "Centrum Garden",
-        puan: "4",
-        imkanlar: ["kahve", "çay", "pasta"],
-        mesafe: "10km",
-      },
-      {
-        ad: "HD İskender",
-        adres: "İyaş AVM",
-        puan: "3",
-        imkanlar: ["öğün", "kahvaltı", "yemek"],
-        mesafe: "5km",
-      },  
-     {
-        ad: "Mackbear",
-        adres: "Şehir Merkezi",
-        puan: "5",
-        imkanlar: ["kahve", "çay", "pasta"],
-        mesafe: "4km",
-      },
-      {
-        ad: "Çay ve Ötesi",
-        adres: "Centrum Garden",
-        puan: "2",
-        imkanlar: ["kahve", "çay", "kek"],
-        mesafe: "10km",
-      },
-      {
-        ad: "Gloria Jeans",
-        adres: "Iyaş AVM",
-        puan: "4",
-        imkanlar: ["kahve", "kek", "çay"],
-        mesafe: "5km",
-      },
-    ],
+    mekanlar: mekanListesi,
+    mesaj: mesaj,
+    cevap: cevap,
   });
 };
 
-const mekanBilgisi = function (req, res, next) {
-  res.render("mekan-detay", {
-    baslik: "Mekan Bilgisi",
-    sayfaBaslik: "Starbucks",
-    footer: " Ahsen Ümit Çelik",
-    mekanBilgisi: {
-      ad: "Starbucks",
-      adres: "Centrum Garden",
-      puan: "3",
-      imkanlar: ["kahve", "çay", "pasta"],
-      koordinatlar: {
-        enlem: 37.781885,
-        boylam: 30.566034,
-      },
-      saatler: [
-        {
-          gunler: "Pazartesi-Cuma",
-          acilis: "7:00",
-          kapanis: "23:00",
-          kapali: false,
-        },
-        {
-          gunler: "Cumartesi",
-          acilis: "9:00",
-          kapanis: "22:30",
-          kapali: false,
-        },
-        {
-          gunler: "Pazar",
-          kapali: true,
-        },
-      ],
-      yorumlar: [
-        {
-          yorumYapan: "Ahsen Ümit Çelik",
-          puan: "3",
-          tarih: "3 Aralık 2020",
-          yorumMetni: "Kahveler Normal",
-        },
-      ],
+const anaSayfa = function (req, res) {
+  var istekSecenekleri = {
+    url: apiSecenekleri.sunucu + apiSecenekleri.apiYolu,
+    method: "GET",
+    json: {},
+    qs: {
+      enlem: req.query.enlem,
+      boylam: req.query.boylam,
     },
+  };
+  request(istekSecenekleri, function (hata, cevap, mekanlar) {
+    var i, gelenMekanlar;
+    gelenMekanlar = mekanlar;
+    if (!hata && gelenMekanlar.length) {
+      for (i = 0; i < gelenMekanlar.length; i++) {
+        gelenMekanlar[i].mesafe = mesafeyiFormatla(gelenMekanlar[i].mesafe);
+      }
+    }
+    anasayfayiOlustur(req, res, cevap, gelenMekanlar);
   });
 };
 
-const yorumEkle = function (req, res, next) {
-  res.render("yorum-ekle", { title: "Yorum Ekle" });
+var detaySayfasiOlustur = function (req, res, mekanDetaylari) {
+  res.render("mekan-detay", {
+    baslik: mekanDetaylari.ad,
+    sayfaBaslik: mekanDetaylari.ad,
+    mekanBilgisi: mekanDetaylari,
+  });
+};
+
+var hataGoster = function (req, res, durum) {
+  var baslik, icerik;
+  if ((durum = 404)) {
+    baslik = "404, Sayfa Bulunamadı!";
+    icerik = "Kusura bakma sayfayı bulamadık!";
+  } else {
+    baslik = durum + ", Birşeyler Ters Gitti!";
+    icerik = "Ters Giden Birşey Var";
+  }
+  res.status(durum);
+  res.render("hata", {
+    baslik: baslik,
+    icerik: icerik,
+  });
+};
+
+var mekanBilgisiGetir = function (req, res, callback) {
+  var istekSecenekleri = {
+    url: apiSecenekleri.sunucu + apiSecenekleri.apiYolu + req.params.mekanid,
+    method: "GET",
+    json: {},
+  };
+  request(istekSecenekleri, function (hata, cevap, mekanDetaylari) {
+    var gelenMekan = mekanDetaylari;
+    if (cevap.statusCode == 200) {
+      gelenMekan.koordinatlar = {
+        enlem: mekanDetaylari.koordinatlar[0],
+        boylam: mekanDetaylari.koordinatlar[1],
+      };
+      callback(req, res, gelenMekan);
+    } else {
+      hataGoster(req, res, cevap.statusCode);
+    }
+  });
+};
+
+const mekanBilgisi = function (req, res, callback) {
+  mekanBilgisiGetir(req, res, function (req, res, cevap) {
+    detaySayfasiOlustur(req, res, cevap);
+  });
+};
+
+var yorumSayfasiOlustur = function (req, res, mekanBilgisi) {
+  res.render("yorum-ekle", {
+    baslik: mekanBilgisi.ad + " Mekanına Yorum Ekle",
+    sayfaBaslik: mekanBilgisi.ad + " Mekanına Yorum Ekle",
+    hata: req.query.hata,
+  });
+};
+
+const yorumEkle = function (req, res) {
+  mekanBilgisiGetir(req, res, function (req, res, cevap) {
+    yorumSayfasiOlustur(req, res, cevap);
+  });
+};
+
+const yorumumuEkle = function (req, res) {
+  var istekSecenekleri, gonderilenYorum, mekanid;
+  mekanid = req.params.mekanid;
+  gonderilenYorum = {
+    yorumYapan: req.body.name,
+    puan: parseInt(req.body.rating, 10),
+    yorumMetni: req.body.review,
+  };
+  istekSecenekleri = {
+    url: apiSecenekleri.sunucu + apiSecenekleri.apiYolu + mekanid + "/yorumlar",
+    method: "POST",
+    json: gonderilenYorum,
+  };
+  if (
+    !gonderilenYorum.yorumYapan ||
+    !gonderilenYorum.puan ||
+    !gonderilenYorum.yorumMetni
+  ) {
+    res.redirect("/mekan/" + mekanid + "/yorum/yeni?hata=evet");
+  } else {
+    request(istekSecenekleri, function (hata, cevap, body) {
+      if (cevap.statusCode === 201) {
+        res.redirect("/mekan/" + mekanid);
+      } else if (
+        cevap.statusCode === 400 &&
+        body.name &&
+        body.name === "ValidationError"
+      ) {
+        res.redirect("/mekan/" + mekanid + "/yorum/yeni?hata=evet");
+      } else {
+        hataGoster(req, res, cevap.statusCode);
+      }
+    });
+  }
 };
 
 module.exports = {
   anaSayfa,
   mekanBilgisi,
   yorumEkle,
+  yorumumuEkle,
 };

@@ -3,7 +3,7 @@ include ortak_fonksiyonlar/fonksiyonlar
 block content
     .row.page-header
         .col-lg-12
-            h1 Starbucks
+            h1=mekanBilgisi.ad
     .row
         .col-xs-12.col-md-12
             .row
@@ -19,9 +19,9 @@ block content
                                 p
                                     | #{saat.gunler}
                                     if(saat.kapali)
-                                        | Kapalı
+                                        |  Kapalı
                                     else
-                                        | #{saat.acilis}-#{saat.kapanis}
+                                        |  #{saat.acilis}-#{saat.kapanis}
                     .panel.panel-primary
                         .panel-heading
                             h2.panel-title Neler Var
@@ -45,7 +45,8 @@ block content
         .col-xs-12
             .panel.panel-primary.review-panel
                 .panel-heading
-                    a.btn.btn-default.pull-right(href='/mekan/yorum/yeni') Yorum Ekle
+                    -var mekanid = mekanBilgisi._id
+                    a.btn.btn-default.pull-right(href='/mekan/' + mekanid + '/yorum/yeni') Yorum Ekle
                     h2.panel-title Müşteri Yorumları
                 .panel-body.review-container
                     each yorum in mekanBilgisi.yorumlar
@@ -53,9 +54,10 @@ block content
                             .review
                                 .well.well-sm.review-header
                                     span.rating
-                                    +puanOlustur(yorum.puan)
+                                    +puanOlustur(yorum.puan) &nbsp;
                                     span.reviewAuthor= yorum.yorumYapan
                                     |   &nbsp;
-                                    small.reviewTimestamp= yorum.tarih
+                                    small.reviewTimestamp
+                                        +tarihiFormatla(yorum.tarih)
                                 .col-xs-12
                                     p= yorum.yorumMetni

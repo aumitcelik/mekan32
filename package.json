@@ -20,6 +20,7 @@
     "morgan": "~1.9.1",
     "nodemon": "^2.0.6",
     "npm": "^6.14.10",
+    "postman-request": "^2.88.1-postman.28",
     "pug": "2.0.0-beta11",
     "save": "^2.4.0"
   }
